@@ -3,8 +3,6 @@ import { config } from "https://deno.land/x/dotenv/mod.ts";
 import router from "./routes.ts";
 import notFound from "./404.ts";
 const env = config();
-console.log(env);
-
 
 const app = new Application();
 const HOST = env.APP_HOST || "http://localhost";

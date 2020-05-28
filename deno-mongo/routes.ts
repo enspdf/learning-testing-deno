@@ -1,20 +1,12 @@
 import { Router } from "https://deno.land/x/oak/mod.ts";
+import UserController from "./controllers/UserController.ts";
 
 const router = new Router();
 
-router.get("/user", (ctx) => {
-    const user = { name: "Name", email: "email@email.com" };
-    ctx.response.body = user;
-});
-
-router.get("/user:id", (ctx) => {
-    ctx.response.body = ctx.params.id;
-});
-
-router.post("/user", async (ctx) => {
-    const { value } = await ctx.request.body();
-    ctx.response.status = 201;
-    ctx.response.body = value;
-});
+router.get("/user", UserController.index)
+    .get("/user/:id", UserController.show)
+    .post("/user", UserController.store)
+    .patch("/user/:id", UserController.update)
+    .delete("/user/:id", UserController.destroy);
 
 export default router;
