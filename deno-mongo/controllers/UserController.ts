@@ -1,6 +1,8 @@
 import db from "../config/databases.ts";
 const users = db.collection("users");
 import validation from "../validation.ts";
+import { ObjectId } from "https://deno.land/x/mongo@v0.7.0/mod.ts";
+import hash from "../util/hash.ts";
 
 export default {
     async index(ctx: any) {
@@ -8,11 +10,19 @@ export default {
         ctx.response.body = data;
     },
     async show(ctx: any) {
-        const data = await users.findOne({ _id: { $oid: ctx.params.id } });
-        ctx.response.body = data;
+        try {
+            const data = await users.findOne({ _id: ObjectId(ctx.params.id) });
+            ctx.response.body = data;
+        } catch (e) {
+            ctx.response.status = 404;
+            ctx.response.body = { error: "User doesn't exists in out database" }
+        }
+
     },
     async store(ctx: any) {
         const value = await validation.validate(ctx);
+        value.created_at = parseInt((new Date().getTime() / 1000).toString());
+        value.password = hash.bcrypt(value.password)
 
         if (value) {
             const insertId = await users.insertOne(value);
@@ -25,17 +35,27 @@ export default {
 
         if (value) {
             const data = { email: value.email, name: value.name, password: value.password }
-            await users.updateOne({ _id: { $oid: ctx.params.id } }, {
-                $set: data
-            });
 
-            ctx.response.status = 200;
-            ctx.response.body = { message: "Updated" }
+            try {
+                await users.updateOne({ _id: ObjectId(ctx.params.id) }, {
+                    $set: data
+                });
+
+                ctx.response.status = 200;
+                ctx.response.body = { message: "Updated" }
+            } catch (e) {
+                ctx.response.status = 404;
+                ctx.response.body = { error: "User doesn't exists in our database" }
+            }
         }
     },
     async destroy(ctx: any) {
-        await users.deleteOne({ _id: { $oid: ctx.params.id } })
-
-        ctx.response.status = 204;
+        try {
+            await users.deleteOne({ _id: ObjectId(ctx.params.id) })
+            ctx.response.status = 204;
+        } catch (e) {
+            ctx.response.status = 404;
+            ctx.response.body = { error: "User doesn't exists in our database" }
+        }
     }
 }
